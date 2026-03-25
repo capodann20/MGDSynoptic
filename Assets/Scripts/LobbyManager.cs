@@ -136,7 +136,33 @@ public class LobbyManager : MonoBehaviour
     {
         try
         {
-            currentLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(code);
+            var playerData = new Dictionary<string, PlayerDataObject>
+        {
+            {
+                "PlayerName",
+                new PlayerDataObject(
+                    PlayerDataObject.VisibilityOptions.Public,
+                    "player_" + AuthenticationService.Instance.PlayerId[..6]
+                )
+            },
+            {
+                "Ready",
+                new PlayerDataObject(
+                    PlayerDataObject.VisibilityOptions.Member,
+                    "0"
+                )
+            }
+        };
+
+            var options = new JoinLobbyByCodeOptions
+            {
+                Player = new Player(
+                    id: AuthenticationService.Instance.PlayerId,
+                    data: playerData
+                )
+            };
+
+            currentLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(code, options);
 
             Debug.Log("Joined lobby: " + currentLobby.Name);
             statusText.text = "Joined lobby!";
@@ -148,6 +174,153 @@ public class LobbyManager : MonoBehaviour
             Debug.LogError("Join by code failed: " + e.Message);
             statusText.text = "Join failed: " + e.Message;
         }
+    }
+    
+    public async Task RefreshCurrentLobbyAsync()
+    {
+        if (currentLobby == null) return;
+        
+        try
+        {
+            currentLobby = await LobbyService.Instance.GetLobbyAsync(currentLobby.Id);
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError("refresh lobby failed: " + e.Message);
+        }
+    }
+
+    public async Task toggleReadyAsync(TMPro.TMP_Text statusText)
+    {
+        if (currentLobby == null)
+        {
+            statusText.text = "no current lobby.";
+            return;
+        }
+
+        try
+        {
+            var me = currentLobby.Players.Find(p => p.Id == AuthenticationService.Instance.PlayerId);
+
+            if (me == null)
+            {
+                statusText.text = "player not found in lobby";
+                return;
+            }
+
+            string currentReady = me.Data != null && me.Data.ContainsKey("Ready")
+                ? me.Data["Ready"].Value
+                : "0";
+            string newReady = currentReady == "1" ? "0" : "1";
+
+            var options = new UpdatePlayerOptions
+            {
+                Data = new Dictionary<string, PlayerDataObject>
+                {
+                    {
+                        "Ready",
+                        new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, newReady)
+                    }
+
+
+                }
+            };
+
+            await LobbyService.Instance.UpdatePlayerAsync(currentLobby.Id, AuthenticationService.Instance.PlayerId, options);
+
+            statusText.text = newReady == "1" ? "you are ready" : "you are not ready";
+
+            await RefreshCurrentLobbyAsync();
+        }
+
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError(" toggle ready failed: " + e.Message);
+            statusText.text = " ready update failed: " + e.Message;
+        }
+    }
+
+    public async Task LeaveLobbyAsync()
+    {
+        if (currentLobby == null) return;
+
+        try
+        {
+            await LobbyService.Instance.RemovePlayerAsync(currentLobby.Id, AuthenticationService.Instance.PlayerId);
+            currentLobby = null;
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError(" leave lobby failed: " +e.Message);
+        }
+    }
+    public bool IsHost()
+    {
+        if (currentLobby == null) return false;
+        return currentLobby.HostId == Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
+    }
+
+    public bool CanStartGame()
+    {
+        if (currentLobby == null) return false;
+        if (!IsHost()) return false;
+        if (!AreAllPlayersReady()) return false;
+
+        return true;
+    }
+    public bool AreAllPlayersReady()
+    {
+        if (currentLobby == null) return false;
+        if (currentLobby.Players == null || currentLobby.Players.Count < currentLobby.MaxPlayers)
+            return false;
+
+        foreach (var player in currentLobby.Players)
+        {
+            if (player.Data == null) return false;
+            if (!player.Data.ContainsKey("Ready")) return false;
+            if (player.Data["Ready"] == null) return false;
+            if (player.Data["Ready"].Value != "1") return false;
+
+        }
+        return true;
+    }
+
+    public async Task SetRelayJoinCodeAsync(string relayJoinCode)
+    {
+        if (currentLobby == null) return;
+
+        try
+        {
+            var options = new UpdateLobbyOptions
+            {
+                Data = new Dictionary<string, DataObject>
+                {
+                    {
+                        "RelayJoinCode",
+                        new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode)
+                    }
+                }
+            };
+            currentLobby = await LobbyService.Instance.UpdateLobbyAsync(currentLobby.Id, options);
+            Debug.Log("Relay join code stored in lobby");
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError("failed to store relay code:" +  e.Message);
+        }
+    }
+
+    public string GetRelayJoinCodeFromLobby()
+    {
+        if (currentLobby == null || currentLobby.Data == null)
+            return null;
+
+        if (!currentLobby.Data.ContainsKey("RelayJoinCode"))
+            return null;
+
+        return currentLobby.Data["RelayJoinCode"]?.Value;
+
     }
 }
     
