@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 1140950222478763595}
   - component: {fileID: 5723932710726634649}
   - component: {fileID: 1705399230574646646}
+  - component: {fileID: -8902081704985008084}
+  - component: {fileID: 3824919309188715028}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -153,4 +155,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61ec4b2944d522a479f0361db7524a85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSpawn
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &-8902081704985008084
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4791795912276233258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 890caa7b4257d7b42979b64f29768079, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerNetworkMovement
+  ShowTopMostFoldoutHeaderGroup: 1
+  moveSpeed: 4
+  rotSpeed: 180
+  maxMoveDistancePerTrick: 0.35
+  minX: -6
+  maxX: 6
+  minZ: -4
+  maxZ: 4
+  positionSmoothSpeed: 12
+  rotationSmoothSpeed: 12
+--- !u!114 &3824919309188715028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4791795912276233258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7d04a375f3b58f4186fb5c00a96979c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMarker
   ShowTopMostFoldoutHeaderGroup: 1
